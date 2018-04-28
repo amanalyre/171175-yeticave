@@ -29,14 +29,28 @@ $ads = [
     ], [
             'name' => 'Куртка для сноуборда DC Mutiny Charocal',
             'category' => 'Одежда',
-            'price' => '7500',
+            'price' => '7500.33',
             'imgUrl' => 'img/lot-5.jpg'
     ], [
             'name' => 'Маска Oakley Canopy',
             'category' => 'Разное',
-            'price' => '10999',
+            'price' => '10999.93',
             'imgUrl' => 'img/lot-6.jpg'
     ]];
+
+function price_round($price)
+{
+    if ($price < 1000)
+    {
+        $price_round = $price;
+    } else
+    {
+        $price_round = number_format(ceil($price), '0', '0', '&thinsp;');
+    }
+
+    print $price_formatted = $price_round . ' ₽';
+};
+
 ?>
 <!DOCTYPE html>
 <html lang="ru">
@@ -132,7 +146,7 @@ $ads = [
                     <div class="lot__state">
                         <div class="lot__rate">
                             <span class="lot__amount">Стартовая цена</span>
-                            <span class="lot__cost"><?=number_format($lot['price'], '0', '0', '&thinsp;') ?><b class="rub">р</b></span>
+                            <span class="lot__cost"><?php price_round($lot['price']) ?></b></span>
                         </div>
                         <div class="lot__timer timer">
 
