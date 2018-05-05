@@ -3,6 +3,8 @@
 require_once("functions.php");
 require_once("data.php");
 
+date_default_timezone_set("Europe/Moscow");
+
 $is_auth = (bool) rand(0, 1);
 
 $user_name = 'Константин';
@@ -29,6 +31,5 @@ $layoutContent = renderTemplate('templates/layout.php', [
         'pageContent' => $templContent,
         'categories' => $categories,
         'pageName' => 'Main - YetiCave']);
-
 print($layoutContent);
 

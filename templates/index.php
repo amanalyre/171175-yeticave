@@ -41,7 +41,7 @@
                             <span class="lot__cost"><?=price_round($lot['price']) ?></b></span>
                         </div>
                         <div class="lot__timer timer">
-
+                            <?=((24 - date('G')) . ':' . (60 - date('i'))); ;?>
                         </div>
                     </div>
                 </div>
