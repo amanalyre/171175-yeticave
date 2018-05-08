@@ -11,7 +11,6 @@ CREATE TABLE users (
   us_password    CHAR(64) NOT NULL,
   us_image       CHAR,
   us_contacts    TEXT,
-  img_url        CHAR(255),
   create_date    DATETIME
 );
 
@@ -23,6 +22,7 @@ CREATE TABLE lots (
   category_id     INT NOT NULL,
   start_price     DECIMAL(65,2) UNSIGNED,
   bid_step        DECIMAL(65,2) UNSIGNED,
+  img_url         CHAR(255),
   lot_description TEXT,
   author_id       INT,
   winner_id       INT
