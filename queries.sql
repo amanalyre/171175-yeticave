@@ -52,12 +52,13 @@ SELECT id, cat_name FROM categories;
 
 -- получить самые новые, открытые лоты.
 -- Каждый лот должен включать название, стартовую цену, ссылку на изображение, цену, количество ставок, название категории;
--- #TODO
 
-SELECT l.lot_name, l.start_price, l.img_url, MAX(b.bid_price), cat.cat_name, COUNT(b.lot_id) AS bids_qty
-FROM lots l, categories cat, bids b
-WHERE cat.id=l.category_id AND b.lot_id=l.id AND winner_id IS NULL
-GROUP BY l.id;
+SELECT l.lot_name, l.start_price, l.img_url, MAX(b.bid_price) AS cur_price, cat.cat_name, COUNT(b.lot_id) AS bids_qty
+FROM lots l
+  LEFT JOIN bids b ON b.lot_id=l.id
+  LEFT JOIN categories cat ON cat.id=l.category_id
+WHERE winner_id IS NULL
+GROUP BY l.id;;
 
 -- Показать лот по его id. Получите также название категории, к которой принадлежит лот
 -- Можно со звездочкой, но так не стоит делать.
