@@ -22,6 +22,7 @@ if ($_POST) {
         $errors = $resultAddLot;
     }
 }
+
 try {
     $templContent = renderTemplate('add-lot', [
         'name'        => $lot['name'] ?? '',

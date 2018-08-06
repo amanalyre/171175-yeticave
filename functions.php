@@ -118,6 +118,81 @@ function getLot(int $lot_id, $db = null)
 }
 
 /**
+ * Создает нового юзера
+ * @param array $user_data Данные юзера
+ * @param array $user_avatar Загруженное изображение
+ * @param null $db Подключение к БД
+ *
+ * @return array|int|string Id добавленного лота или массив ошибок
+ */
+function saveUser(array $user_data, array $user_avatar, $db = null)
+{
+    $errors = array_merge(checkFieldsSaveUser($user_data), checkUplImage($user_avatar, 'photo'));
+
+    if (empty($errors)) {
+        $config = getConfig();
+        if ($imageName = saveImage($user_avatar, $config['avatarDirUpl']))
+            $sql = 'INSERT INTO users
+                      (us_name, us_email, us_password, create_date, us_image)
+                    VALUES
+                      (?, ?, ?, NOW(), ?);';
+        $parametersList = [
+            'sql' => $sql,
+            'data' => [
+                $user_data['name'],
+                $user_data['email'],
+                password_hash($user_data['password'], PASSWORD_DEFAULT),
+                $imageName
+            ],
+            'limit' => 1
+        ];
+
+        processingSqlQuery($parametersList, $db);
+
+        return true;
+    } else {
+        return $errors;
+    }
+}
+
+/**
+ * Проверяет обязательые поля в добавлении нового пользователя
+ * @param array $user_data
+ */
+function checkFieldsSaveUser(array $user_data)
+{
+    $errors = formRequiredFields($user_data,
+        [
+            'email', 'password', 'name', 'message'
+        ]); // названия полей в шаблоне
+
+    if (!filter_var($user_data['email'], FILTER_VALIDATE_EMAIL)) {
+        $errors['email'] = 'Введите адрес электронной почты';
+    } elseif (getUserByEmail($user_data['email'])) {
+        $errors['email'] = 'Пользователь с указанным email уже существует';
+    };
+
+    return $errors;
+}
+
+function getUserByEmail(string $email, $db = null)
+{
+    if (empty($email)) {
+        return false;
+    }
+    $sql = 'SELECT * FROM users WHERE us_email = ?'; #TODO выпили тут звездочку нафиг!
+    $parameterList = [
+        'sql' => $sql,
+        'data' => [
+            $email
+        ],
+        'limit' => 1
+    ];
+    $result = processingSqlQuery($parameterList, $db);
+    return $result;
+}
+
+/**
  * Округляет до целого цену лота
  * @param int $price Цена товара точная
  *
@@ -139,7 +214,7 @@ function price_round($price)
 /**
  * Сохраняет данные лота
  * @param array $lot_data Данные лота
- * @param array $lot_image Данные изображения
+ * @param array $lot_image Загруженное изображение
  * @param null $db Подключение к БД
  *
  * @return array|int|string Id добавленного лота или массив ошибок
