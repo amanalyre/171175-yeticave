@@ -44,7 +44,7 @@ SET bid_date = '2018-05-08', bid_price = 10999, user_id = 2, lot_id = 1;
 INSERT INTO bids
 SET bid_date = '2018-05-08', bid_price = 11199, user_id = 2, lot_id = 1;
 
---------
+-- ------
 -- Получить все категории;
 
 SELECT * FROM categories;  -- использовать звездочку нежелательно во встроенных запросах, поэтому ниже второй
