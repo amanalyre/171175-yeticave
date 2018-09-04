@@ -19,17 +19,17 @@ foreach ($lotsList as $lot) {
 
 $categories = getCatList();
 
+var_dump($_SESSION['user']);
+
 $templContent = renderTemplate('index', [
     'lotListContent' => $lotListContent]);
 
 $layoutContent = renderTemplate('layout', [
     'pageContent' => $templContent,
     'categories' => $categories,
-    'pageName' => 'Main - YetiCave']); //заменить на динамический
-
-//$layoutContent = renderTemplate('layout', [
-//    'pageContent' => $templContent,
-//    'categories' => $categories,
-//    'pageName' => 'Main - YetiCave']);
+    'isAuth' => empty(getUserSessionData()) ? false : true,
+    'userName' => getUserSessionData()['us_name'] ?? null,
+    'userAvatar' => getUserSessionData()['us_image'] ?? null,
+    'pageName' => 'Main - YetiCave']);
 
 print($layoutContent);

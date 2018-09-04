@@ -141,7 +141,7 @@ function saveUser(array $user_data, array $user_avatar, $db = null)
             'data' => [
                 $user_data['name'],
                 $user_data['email'],
-                password_hash($user_data['password'], PASSWORD_DEFAULT),
+                password_hash(trim($user_data['password']), PASSWORD_DEFAULT),
                 $imageName
             ],
             'limit' => 1
@@ -163,19 +163,23 @@ function checkFieldsSaveUser(array $user_data)
 {
     $errors = formRequiredFields($user_data,
         [
-            'email', 'password', 'name', 'message'
+            'email', 'password', 'password2', 'name', 'message'
         ]); // названия полей в шаблоне
 
     if (!filter_var($user_data['email'], FILTER_VALIDATE_EMAIL)) {
         $errors['email'] = 'Введите адрес электронной почты';
-    } elseif (getUserByEmail($user_data['email'])) {
+    } elseif (getUserInfoByEmail($user_data['email'])) {
         $errors['email'] = 'Пользователь с указанным email уже существует';
     };
+
+    if (empty($errors['password']) && $user_data['password'] !== $user_data['password2']) {
+        $errors['password'] = 'Введенные пароли не совпадают';
+    }
 
     return $errors;
 }
 
-function getUserByEmail(string $email, $db = null)
+function getUserInfoByEmail(string $email)
 {
     if (empty($email)) {
         return false;
@@ -188,8 +192,132 @@ function getUserByEmail(string $email, $db = null)
         ],
         'limit' => 1
     ];
-    $result = processingSqlQuery($parameterList, $db);
+    $result = processingSqlQuery($parameterList);
     return $result;
+}
+
+/**
+ * Логинит пользователя на сайт
+ * Не показываем юзеру, что из пары пароль-логин было неправильным.
+ * @param array $user_data данные, полученные от юзера
+ * @return array
+ * todo впилить проверку на количество попыток авторизации (кука?)
+ */
+function login(array $user_data)
+{
+    $errors = checkFieldsLogin($user_data);
+    $foundUser = getUserInfoByEmail($user_data['email']); // данные юзера. #todo проверь с несуществующим
+
+    if (empty($errors) && $foundUser) { // пустые ошибки
+        if (password_verify($user_data['password'], $foundUser['us_password'])) {
+            $foundUser['us_password'] = passwordNeedsReHash($foundUser, $user_data['password']);
+            return [true, $foundUser];
+        } else {
+            $errors['password'] = 'Неправильный логин или пароль';
+        }
+    } else {
+        $errors['email'] = 'Неправильный логин или пароль Ква!';
+    }
+    return [false, $errors];
+}
+
+/**
+ * Проверяет обязательые поля в авторизации пользователя
+ * @param array $user_data
+ */
+function checkFieldsLogin(array $user_data)
+{
+    $errors = formRequiredFields($user_data,
+        [
+            'email', 'password'
+        ]);
+
+    if (empty($errors['email']) && (!filter_var($user_data['email'], FILTER_VALIDATE_EMAIL))) {
+        $errors['email'] = 'Введите адрес электронной почты';
+    }
+
+    return $errors;
+}
+
+/**
+ * Проверяет, нужно ли пересчитать хеш пароля пользователя, и вызывает его обновление
+ * @param array $foundUser
+ * @param string $password
+ * @return bool|mixed|string
+ */
+function passwordNeedsReHash(array $foundUser, string $password)
+{
+    if (password_needs_rehash($foundUser['us_password'], PASSWORD_DEFAULT)) {
+        return passwordUpdating($foundUser['id'], $password);
+    }
+
+    return $foundUser['us_password'];
+}
+
+/**
+ * Обновляет у пользователя хеш пароля
+ * @param int $userId
+ * @param string $password
+ * @param null $db
+ * @return bool|string
+ */
+function passwordUpdating(int $userId, string $password, $db = null)
+{
+    $reHash = password_hash($password, PASSWORD_DEFAULT);
+
+    $sql = 'UPDATE users SET us_password = ? WHERE id = ?';
+
+    $parameterList = [
+        'sql' => $sql,
+        'data' => [
+            $reHash,
+            $userId
+        ],
+        'limit' => 1
+    ];
+
+    processingSqlQuery($parameterList, $db);
+
+    return $reHash;
+}
+
+/**
+ * Получает данные сессии
+ * @return array данные сессии
+ */
+function getSession()
+{
+    static $session = null;
+
+    if ($session === null) {
+        $session = $_SESSION;
+    }
+
+    return $session;
+}
+
+/**
+ * Получает данные сессии пользователя
+ *
+ * @return bool днные пользователя из сессии
+ */
+function getUserSessionData()
+{
+    return getSession()['user'] ?? false;
+}
+
+/**
+ * Проверяет, авторизован ли пользователь
+ *
+ * @return bool Результат
+ */
+function isAuthorized()
+{
+    if (!empty(getUserSessionData())) {
+        return true;
+    }
+
+    return false;
 }
 
 /**
