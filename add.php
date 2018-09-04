@@ -48,7 +48,6 @@ try {
     echo 'Поймано исключение: ',  $e->getMessage(), "\n";
 };
 
-var_dump($_SESSION['user']);
 $layoutContent = renderTemplate('layout', [
     'pageContent' => $templContent,
     'categories'  => $categories,

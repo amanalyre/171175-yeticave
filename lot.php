@@ -2,6 +2,7 @@
 
 require_once("functions.php");
 require_once ('connection.php');
+require_once ("configure.php");
 
 $lot_id = filter_var($_GET['id'], FILTER_VALIDATE_INT);
 

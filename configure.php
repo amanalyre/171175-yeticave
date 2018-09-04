@@ -1,7 +1,5 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: mfgoreva
- * Date: 04.09.2018
- * Time: 21:36
- */
+
+date_default_timezone_set('Europe/Moscow');
+//error_reporting(E_ALL);
+session_start();

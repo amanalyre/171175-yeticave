@@ -285,26 +285,28 @@ function passwordUpdating(int $userId, string $password, $db = null)
  * Получает данные сессии
  * @return array данные сессии
  */
-function getSession()
-{
-    static $session = null;
-
-    if ($session === null) {
-        $session = $_SESSION;
-    }
-
-    return $session;
-}
-
-/**
- * Получает данные сессии пользователя
- *
- * @return bool днные пользователя из сессии
- */
-function getUserSessionData()
-{
-    return getSession()['user'] ?? false;
-}
+//function getSession()
+//{
+//    static $session = null;
+//
+//    if ($session === null) {
+//        $session = $_SESSION;
+//    }
+//    print "Session";
+//var_dump($session);
+//    return $session;
+//}
+//
+///**
+// * Получает данные сессии пользователя
+// *
+// * @return bool днные пользователя из сессии
+// */
+//function getUserSessionData()
+//{
+//    var_dump(is_array(getSession()['user']));
+//    return getSession()['user'] ?? false;
+//}
 
 /**
  * Проверяет, авторизован ли пользователь
@@ -313,7 +315,8 @@ function getUserSessionData()
  */
 function isAuthorized()
 {
-    if (!empty(getUserSessionData())) {
+//    if (!empty(getUserSessionData())) {
+    if (!empty($_SESSION)) {
         return true;
     }
 

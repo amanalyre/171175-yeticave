@@ -23,13 +23,13 @@
         <?php endif; ?>
         <nav class="user-menu">
 
-        <!-- здесь должен быть PHP код для показа аватара пользователя -->
             <?php if ($isAuth): ?>
                 <div class="user-menu__image">
-                  "<img src="<?=$userAvatar; ?>" width=40 height=40 alt='Пользователь'>
+                  <img src="<?=$userAvatar; ?>" width=40 height=40 alt='Пользователь'>
                 </div>
                 <div class="user-menu__logged">
                   <p><?=$userName;?></p>
+                  <a href="logout.php">Выход</a>
                 </div>
             <?php else: ?>
                 <ul class="user-menu__list">

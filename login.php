@@ -13,14 +13,15 @@ if ($_POST) {
     list($foundUser, $errorsFound) = login($user);
     if ($foundUser === true) {
         $_SESSION['user'] = $foundUser;
-        $_SESSION["visit_count"] = "Hi";
-        setcookie('sessWasStarted', time()+60*60*24*30);
+        setcookie('sessWasStarted', 'hi', time()+60*60*24*30);
         header('Location: index.php');
+
         exit;
     } else {
         $errors = $errorsFound;
     }
 }
+
 
 try {
     $templContent = renderTemplate('login', [
