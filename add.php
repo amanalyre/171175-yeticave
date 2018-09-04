@@ -2,6 +2,7 @@
 
 require_once("functions.php");
 require_once ('connection.php');
+require_once ("configure.php");
 
 $categories = getCatList();
 
@@ -53,7 +54,7 @@ $layoutContent = renderTemplate('layout', [
     'categories'  => $categories,
     'pageName'    => 'Добавление нового лота',
     'isAuth'      => empty($_SESSION['user']) ? false : true,
-    'userName' => $_SESSION['user']['name'] ?? null,
-    'userAvatar' => $_SESSION['user']['avatar'] ?? null]);
+    'userName'    => $_SESSION['user']['name'] ?? null,
+    'userAvatar'  => $_SESSION['user']['avatar'] ?? null]);
 
 print($layoutContent);

@@ -24,7 +24,7 @@
         <nav class="user-menu">
 
         <!-- здесь должен быть PHP код для показа аватара пользователя -->
-            <?php if ($is_auth): ?>
+            <?php if ($isAuth): ?>
                 <div class="user-menu__image">
                   "<img src="<?=$userAvatar; ?>" width=40 height=40 alt='Пользователь'>
                 </div>

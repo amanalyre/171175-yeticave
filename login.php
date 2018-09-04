@@ -1,6 +1,7 @@
 <?php
 require_once("functions.php");
 require_once ('connection.php');
+require_once ("configure.php");
 
 #TODO найди причину, по которой в шаблоне ошибки не отрабатывают корректно.
 
@@ -35,7 +36,9 @@ try {
 $layoutContent = renderTemplate('layout', [
     'pageContent' => $templContent,
     'categories'  => $categories,
-    'pageName'    => 'Вход - Yeticave']);
-//    'isAuth' => empty($_SESSION['user']) ? false : true;
+    'pageName'    => 'Вход - Yeticave',
+    'isAuth' => empty(getUserSessionData()) ? false : true,
+    'userName' => getUserSessionData()['us_name'] ?? null,
+    'userAvatar' => getUserSessionData()['us_image'] ?? null]);
 
 print($layoutContent);
