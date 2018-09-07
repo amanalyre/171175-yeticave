@@ -52,8 +52,8 @@ $layoutContent = renderTemplate('layout', [
     'pageContent' => $templContent,
     'categories'  => $categories,
     'pageName'    => 'Добавление нового лота',
-    'isAuth'      => empty($_SESSION['user']) ? false : true,
-    'userName'    => $_SESSION['user']['name'] ?? null,
-    'userAvatar'  => $_SESSION['user']['avatar'] ?? null]);
+    'isAuth' => empty(getUserSessionData()) ? false : true,
+    'userName' => getUserSessionData()['us_name'] ?? null,
+    'userAvatar' => getUserSessionData()['us_image'] ?? null]);
 
 print($layoutContent);

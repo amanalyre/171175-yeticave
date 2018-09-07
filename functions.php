@@ -37,6 +37,7 @@ function processingSqlQuery(array $parameterList, $db = null)
     if ($db === null) {
         $db = connectToDb();
     }
+
     addLimit($parameterList);
     $stmt = db_get_prepare_stmt($db, $parameterList['sql'], $parameterList['data']);
     mysqli_stmt_execute($stmt);
@@ -52,16 +53,43 @@ function processingSqlQuery(array $parameterList, $db = null)
     return $result;
 }
 
-// Здесь задаются лимиты для результатов
-function addLimit(array $parameterList)
+/**
+ * Установка лимитов для результатов запрос, если лимит использован
+ * @param array $parameterList
+ */
+function addLimit(array &$parameterList)
 {
-    if ( (int) $parameterList['limit']) {
-        $parameterList['sql'] .= ' LIMIT ?';
-        $parameterList['data'][] = (int) $parameterList['limit'];
+    if (!empty($parameterList['limit'])) {
+        if ((int)$parameterList['limit']) {
+            $parameterList['sql'] .= ' LIMIT ?';
+            $parameterList['data'][] = (int)$parameterList['limit'];
+        }
     }
+
     return;
 }
-// Здесь получается список категорий
+
+/** Установка оффсета для результатов запрос, если оффсет использован
+ * @param array $parameterList
+ */
+function addOffset(array &$parameterList)
+{
+    if (!empty($parameterList['offset'])) {
+        if ((int)$parameterList['offset']) {
+            $parameterList['sql'] .= ' OFFSET ?';
+            $parameterList['data'][] = (int)$parameterList['offset'];
+        }
+    }
+
+    return;
+}
+
+/**
+ * Получает список категорий
+ * @param int|null $limit необязательное поле лимита для запроса
+ * @param null $db Ресурс соединения с ДБ
+ * @return array|bool|null
+ */
 function getCatList(int $limit = null, $db = null) {
     $sql = 'SELECT `cat_name`, `id` FROM categories;';
     $parameterList = [
@@ -107,7 +135,7 @@ function getLot(int $lot_id, $db = null)
 {
     $sql = 'SELECT l.lot_name, l.start_price, c.cat_name, l.id, l.img_url, l.lot_description
               FROM lots l, categories c
-              WHERE l.category_id=c.id AND l.id = ?;';
+              WHERE l.category_id=c.id AND l.id = ?';
 
     $parametersList = [
         'sql' => $sql,
@@ -179,7 +207,7 @@ function checkFieldsSaveUser(array $user_data)
     return $errors;
 }
 
-function getUserInfoByEmail(string $email)
+function getUserInfoByEmail(string $email, $limit = 1) // Здесь массив нормальный
 {
     if (empty($email)) {
         return false;
@@ -190,8 +218,9 @@ function getUserInfoByEmail(string $email)
         'data' => [
             $email
         ],
-        'limit' => 1
+        'limit' => $limit
     ];
+
     $result = processingSqlQuery($parameterList);
     return $result;
 }
@@ -211,13 +240,14 @@ function login(array $user_data)
     if (empty($errors) && $foundUser) { // пустые ошибки
         if (password_verify($user_data['password'], $foundUser['us_password'])) {
             $foundUser['us_password'] = passwordNeedsReHash($foundUser, $user_data['password']);
-            return [true, $foundUser];
+            return [$foundUser];
         } else {
             $errors['password'] = 'Неправильный логин или пароль';
         }
     } else {
-        $errors['email'] = 'Неправильный логин или пароль Ква!';
+        $errors['email'] = 'Неправильный логин или пароль';
     }
+
     return [false, $errors];
 }
 
@@ -285,28 +315,27 @@ function passwordUpdating(int $userId, string $password, $db = null)
  * Получает данные сессии
  * @return array данные сессии
  */
-//function getSession()
-//{
-//    static $session = null;
-//
-//    if ($session === null) {
-//        $session = $_SESSION;
-//    }
-//    print "Session";
-//var_dump($session);
-//    return $session;
-//}
-//
-///**
-// * Получает данные сессии пользователя
-// *
-// * @return bool днные пользователя из сессии
-// */
-//function getUserSessionData()
-//{
-//    var_dump(is_array(getSession()['user']));
-//    return getSession()['user'] ?? false;
-//}
+function getSession()
+{
+    static $session = null;
+
+    if ($session === null) {
+        $session = $_SESSION;
+    }
+
+    return $session;
+}
+
+/**
+ * Получает данные сессии пользователя
+ *
+ * @return array|bool данные пользователя из сессии
+ */
+function getUserSessionData()
+{
+
+    return getSession()['user'] ?? false;
+}
 
 /**
  * Проверяет, авторизован ли пользователь
@@ -315,8 +344,8 @@ function passwordUpdating(int $userId, string $password, $db = null)
  */
 function isAuthorized()
 {
-//    if (!empty(getUserSessionData())) {
-    if (!empty($_SESSION)) {
+    if (!empty(getUserSessionData())) {
+//    if (!empty($_SESSION)) {
         return true;
     }
 
@@ -347,10 +376,11 @@ function price_round($price)
  * @param array $lot_data Данные лота
  * @param array $lot_image Загруженное изображение
  * @param null $db Подключение к БД
+ * @param int $limit
  *
  * @return array|int|string Id добавленного лота или массив ошибок
  */
-function saveLot(array $lot_data, array $lot_image, $db = null)
+function saveLot(array $lot_data, array $lot_image, $db = null, $limit = 1)
 {
     $errors = array_merge(checkFieldsSaveLot($lot_data), checkUplImage($lot_image, 'photo'));
 
@@ -360,7 +390,7 @@ function saveLot(array $lot_data, array $lot_image, $db = null)
             $sql = 'INSERT INTO lots
                       (lot_name, create_date, category_id, start_price, bid_step, img_url, lot_description, author_id, finish_date)
                     VALUES 
-                      (?, NOW(), ?, ?, ?, ?, ?, 1, ?);';
+                      (?, NOW(), ?, ?, ?, ?, ?, 1, ?)';
         $parametersList = [
             'sql' => $sql,
             'data' => [
@@ -372,9 +402,9 @@ function saveLot(array $lot_data, array $lot_image, $db = null)
                 $lot_data['description'],
                 $lot_data['finish_date']
             ],
-            'limit' => 1
+            'limit' => $limit
         ];
-
+var_dump($parametersList);
         processingSqlQuery($parametersList, $db);
 
         return mysqli_insert_id(connectToDb());

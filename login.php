@@ -3,7 +3,6 @@ require_once("functions.php");
 require_once ('connection.php');
 require_once ("configure.php");
 
-#TODO найди причину, по которой в шаблоне ошибки не отрабатывают корректно.
 
 $categories = getCatList();
 
@@ -11,7 +10,7 @@ if ($_POST) {
     $user = $_POST['user'];
 
     list($foundUser, $errorsFound) = login($user);
-    if ($foundUser === true) {
+    if ($foundUser !== false) {
         $_SESSION['user'] = $foundUser;
         setcookie('sessWasStarted', 'hi', time()+60*60*24*30);
         header('Location: index.php');

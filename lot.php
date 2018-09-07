@@ -22,29 +22,20 @@ if ($lot_id == false || $lot_info == false) {
     exit;
 }
 
-//if (!isset($_GET['id']))
-//{
-//    header($_SERVER['SERVER_PROTOCOL']." 404 Not Found");
-//    $templContent = renderTemplate('404', []);
-//} else {
-//    $lot_id = intval($_GET['id']);
-//}
-
 $lot_info =  getLot($lot_id);
-
-
 
 $templContent = renderTemplate('lot', [
     'lot_info' => $lot_info]);
 
-
 $categories = getCatList();
-
 
 $layoutContent = renderTemplate('layout', [
     'pageContent' => $templContent,
     'categories' => $categories,
-    'pageName' => $lot_info['lot_name']]);
+    'pageName' => $lot_info['lot_name'],
+    'isAuth' => empty(getUserSessionData()) ? false : true,
+    'userName' => getUserSessionData()['us_name'] ?? null,
+    'userAvatar' => getUserSessionData()['us_image'] ?? null]);
 
 print($layoutContent);
 
