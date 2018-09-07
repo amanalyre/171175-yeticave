@@ -37,6 +37,7 @@ function processingSqlQuery(array $parameterList, $db = null)
     if ($db === null) {
         $db = connectToDb();
     }
+
     addLimit($parameterList);
     $stmt = db_get_prepare_stmt($db, $parameterList['sql'], $parameterList['data']);
     mysqli_stmt_execute($stmt);
@@ -52,16 +53,43 @@ function processingSqlQuery(array $parameterList, $db = null)
     return $result;
 }
 
-// Здесь задаются лимиты для результатов
-function addLimit(array $parameterList)
+/**
+ * Установка лимитов для результатов запрос, если лимит использован
+ * @param array $parameterList
+ */
+function addLimit(array &$parameterList)
 {
-    if ( (int) $parameterList['limit']) {
-        $parameterList['sql'] .= ' LIMIT ?';
-        $parameterList['data'][] = (int) $parameterList['limit'];
+    if (!empty($parameterList['limit'])) {
+        if ((int)$parameterList['limit']) {
+            $parameterList['sql'] .= ' LIMIT ?';
+            $parameterList['data'][] = (int)$parameterList['limit'];
+        }
     }
+
     return;
 }
-// Здесь получается список категорий
+
+/** Установка оффсета для результатов запрос, если оффсет использован
+ * @param array $parameterList
+ */
+function addOffset(array &$parameterList)
+{
+    if (!empty($parameterList['offset'])) {
+        if ((int)$parameterList['offset']) {
+            $parameterList['sql'] .= ' OFFSET ?';
+            $parameterList['data'][] = (int)$parameterList['offset'];
+        }
+    }
+
+    return;
+}
+
+/**
+ * Получает список категорий
+ * @param int|null $limit необязательное поле лимита для запроса
+ * @param null $db Ресурс соединения с ДБ
+ * @return array|bool|null
+ */
 function getCatList(int $limit = null, $db = null) {
     $sql = 'SELECT `cat_name`, `id` FROM categories;';
     $parameterList = [
@@ -107,7 +135,7 @@ function getLot(int $lot_id, $db = null)
 {
     $sql = 'SELECT l.lot_name, l.start_price, c.cat_name, l.id, l.img_url, l.lot_description
               FROM lots l, categories c
-              WHERE l.category_id=c.id AND l.id = ?;';
+              WHERE l.category_id=c.id AND l.id = ?';
 
     $parametersList = [
         'sql' => $sql,
@@ -141,7 +169,7 @@ function saveUser(array $user_data, array $user_avatar, $db = null)
             'data' => [
                 $user_data['name'],
                 $user_data['email'],
-                password_hash($user_data['password'], PASSWORD_DEFAULT),
+                password_hash(trim($user_data['password']), PASSWORD_DEFAULT),
                 $imageName
             ],
             'limit' => 1
@@ -163,19 +191,23 @@ function checkFieldsSaveUser(array $user_data)
 {
     $errors = formRequiredFields($user_data,
         [
-            'email', 'password', 'name', 'message'
+            'email', 'password', 'password2', 'name', 'message'
         ]); // названия полей в шаблоне
 
     if (!filter_var($user_data['email'], FILTER_VALIDATE_EMAIL)) {
         $errors['email'] = 'Введите адрес электронной почты';
-    } elseif (getUserByEmail($user_data['email'])) {
+    } elseif (getUserInfoByEmail($user_data['email'])) {
         $errors['email'] = 'Пользователь с указанным email уже существует';
     };
+
+    if (empty($errors['password']) && $user_data['password'] !== $user_data['password2']) {
+        $errors['password'] = 'Введенные пароли не совпадают';
+    }
 
     return $errors;
 }
 
-function getUserByEmail(string $email, $db = null)
+function getUserInfoByEmail(string $email, $limit = 1) // Здесь массив нормальный
 {
     if (empty($email)) {
         return false;
@@ -186,10 +218,138 @@ function getUserByEmail(string $email, $db = null)
         'data' => [
             $email
         ],
+        'limit' => $limit
+    ];
+
+    $result = processingSqlQuery($parameterList);
+    return $result;
+}
+
+/**
+ * Логинит пользователя на сайт
+ * Не показываем юзеру, что из пары пароль-логин было неправильным.
+ * @param array $user_data данные, полученные от юзера
+ * @return array
+ * todo впилить проверку на количество попыток авторизации (кука?)
+ */
+function login(array $user_data)
+{
+    $errors = checkFieldsLogin($user_data);
+    $foundUser = getUserInfoByEmail($user_data['email']); // данные юзера. #todo проверь с несуществующим
+
+    if (empty($errors) && $foundUser) { // пустые ошибки
+        if (password_verify($user_data['password'], $foundUser['us_password'])) {
+            $foundUser['us_password'] = passwordNeedsReHash($foundUser, $user_data['password']);
+            return [$foundUser];
+        } else {
+            $errors['password'] = 'Неправильный логин или пароль';
+        }
+    } else {
+        $errors['email'] = 'Неправильный логин или пароль';
+    }
+
+    return [false, $errors];
+}
+
+/**
+ * Проверяет обязательые поля в авторизации пользователя
+ * @param array $user_data
+ */
+function checkFieldsLogin(array $user_data)
+{
+    $errors = formRequiredFields($user_data,
+        [
+            'email', 'password'
+        ]);
+
+    if (empty($errors['email']) && (!filter_var($user_data['email'], FILTER_VALIDATE_EMAIL))) {
+        $errors['email'] = 'Введите адрес электронной почты';
+    }
+
+    return $errors;
+}
+
+/**
+ * Проверяет, нужно ли пересчитать хеш пароля пользователя, и вызывает его обновление
+ * @param array $foundUser
+ * @param string $password
+ * @return bool|mixed|string
+ */
+function passwordNeedsReHash(array $foundUser, string $password)
+{
+    if (password_needs_rehash($foundUser['us_password'], PASSWORD_DEFAULT)) {
+        return passwordUpdating($foundUser['id'], $password);
+    }
+
+    return $foundUser['us_password'];
+}
+
+/**
+ * Обновляет у пользователя хеш пароля
+ * @param int $userId
+ * @param string $password
+ * @param null $db
+ * @return bool|string
+ */
+function passwordUpdating(int $userId, string $password, $db = null)
+{
+    $reHash = password_hash($password, PASSWORD_DEFAULT);
+
+    $sql = 'UPDATE users SET us_password = ? WHERE id = ?';
+
+    $parameterList = [
+        'sql' => $sql,
+        'data' => [
+            $reHash,
+            $userId
+        ],
         'limit' => 1
     ];
-    $result = processingSqlQuery($parameterList, $db);
-    return $result;
+
+    processingSqlQuery($parameterList, $db);
+
+    return $reHash;
+}
+
+/**
+ * Получает данные сессии
+ * @return array данные сессии
+ */
+function getSession()
+{
+    static $session = null;
+
+    if ($session === null) {
+        $session = $_SESSION;
+    }
+
+    return $session;
+}
+
+/**
+ * Получает данные сессии пользователя
+ *
+ * @return array|bool данные пользователя из сессии
+ */
+function getUserSessionData()
+{
+
+    return getSession()['user'] ?? false;
+}
+
+/**
+ * Проверяет, авторизован ли пользователь
+ *
+ * @return bool Результат
+ */
+function isAuthorized()
+{
+    if (!empty(getUserSessionData())) {
+//    if (!empty($_SESSION)) {
+        return true;
+    }
+
+    return false;
 }
 
 /**
@@ -216,10 +376,11 @@ function price_round($price)
  * @param array $lot_data Данные лота
  * @param array $lot_image Загруженное изображение
  * @param null $db Подключение к БД
+ * @param int $limit
  *
  * @return array|int|string Id добавленного лота или массив ошибок
  */
-function saveLot(array $lot_data, array $lot_image, $db = null)
+function saveLot(array $lot_data, array $lot_image, $db = null, $limit = 1)
 {
     $errors = array_merge(checkFieldsSaveLot($lot_data), checkUplImage($lot_image, 'photo'));
 
@@ -229,7 +390,7 @@ function saveLot(array $lot_data, array $lot_image, $db = null)
             $sql = 'INSERT INTO lots
                       (lot_name, create_date, category_id, start_price, bid_step, img_url, lot_description, author_id, finish_date)
                     VALUES 
-                      (?, NOW(), ?, ?, ?, ?, ?, 1, ?);';
+                      (?, NOW(), ?, ?, ?, ?, ?, 1, ?)';
         $parametersList = [
             'sql' => $sql,
             'data' => [
@@ -241,9 +402,9 @@ function saveLot(array $lot_data, array $lot_image, $db = null)
                 $lot_data['description'],
                 $lot_data['finish_date']
             ],
-            'limit' => 1
+            'limit' => $limit
         ];
-
+var_dump($parametersList);
         processingSqlQuery($parametersList, $db);
 
         return mysqli_insert_id(connectToDb());

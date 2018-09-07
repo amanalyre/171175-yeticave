@@ -11,6 +11,11 @@
         <input id="password" type="password" name="user[password]" placeholder="Введите пароль">
         <span class="form__error"><?= $errors['password'] ?? '' ?></span>
     </div>
+    <div class="form__item <?php echo (empty($errors['password2'])) ? '' : ' form__item--invalid' ?>">
+        <label for="password2">Повторите пароль*</label>
+        <input id="password2" type="passwor2d" name="user[password2]" placeholder="Введите пароль">
+        <span class="form__error"><?= $errors['password2'] ?? '' ?></span>
+    </div>
     <div class="form__item<?php echo (empty($errors['name'])) ? '' : ' form__item--invalid' ?>">
         <label for="name">Имя*</label>
         <input id="name" type="text" name="user[name]" placeholder="Введите имя" value="<?=$name; ?>">
@@ -54,5 +59,9 @@
     <span class="form__error form__error--bottom">Пожалуйста, исправьте ошибки в форме.</span>
     <?php endif?>
     <button type="submit" class="button">Зарегистрироваться</button>
-    <a class="text-link" href="#">Уже есть аккаунт</a>
+    <a class="text-link" href="login.php">Уже есть аккаунт</a>
+    <p>
+    <div align="left">
+        <a class="text-link" href="lot.php?id=7">Я еще не решился...</a>
+    </div>
 </form>
