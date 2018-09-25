@@ -57,7 +57,7 @@ function processingSqlQuery(array $parameterList, $db = null)
  * Установка лимитов для результатов запрос, если лимит использован
  * @param array $parameterList
  */
-function addLimit(array &$parameterList)
+function addLimit(array $parameterList)
 {
     if (!empty($parameterList['limit'])) {
         if ((int)$parameterList['limit']) {
@@ -404,7 +404,6 @@ function saveLot(array $lot_data, array $lot_image, $db = null, $limit = 1)
             ],
             'limit' => $limit
         ];
-var_dump($parametersList);
         processingSqlQuery($parametersList, $db);
 
         return mysqli_insert_id(connectToDb());
